@@ -1,5 +1,9 @@
 # Raspifly
 
+## Control Diagram
+
+![control diagram](docs/images/DroneControlDiagram.png)
+
 ## To-Do Mr. Byrne
 
 1. Create Raspberry Pi Webserver
