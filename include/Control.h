@@ -1,27 +1,14 @@
-#include "Servo.h";
-#include "Arduino.h";
+#include "Servo.h"
 
-#define DEFAULT_PIN_FRONT_LEFT 3
-#define DEFAULT_PIN_FRONT_RIGHT 5
-#define DEFAULT_PIN_REAR_RIGHT 6
-#define DEFAULT_PIN_REAR_LEFT 9
+#define DEFAULT_MOTOR_PIN_FRONT_RIGHT 3
+#define DEFAULT_MOTOR_PIN_FRONT_LEFT 4
+#define DEFAULT_MOTOR_PIN_BACK_RIGHT 5
+#define DEFAULT_MOTOR_PIN_BACK_LEFT 6
 
-Servo FRONT_RIGHT;
-Servo FRONT_LEFT;
-Servo REAR_RIGHT;
-Servo REAR_LEFT;
-
-void execCommand(char* COMMAND, char* STATUS){
-    
+float getHeight(){
+    // To-Do For alex
 }
 
-void initializeMotors(){
-    FRONT_RIGHT.attach(DEFAULT_PIN_FRONT_RIGHT, 1000, 2000);
-    FRONT_LEFT.attach(DEFAULT_PIN_FRONT_LEFT, 1000, 2000);
-    REAR_RIGHT.attach(DEFAULT_PIN_REAR_RIGHT, 1000, 2000);
-    REAR_LEFT.attach(DEFAULT_PIN_REAR_LEFT, 1000, 2000);
-}
-
-void setSpeed(char motor[2], int speed){
-
+void updateTelemetry(){
+    // To-Do For Alex
 }

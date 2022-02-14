@@ -1,33 +1,33 @@
 #include "Arduino.h"
-#include "Communications.h"
-#include "Control.h"
+#include "Servo.h"
 
-// <helloworld>
+//#include "MPU6050.h"
 
-// <h>
-// <l>
-// <1>
-// <2>
-// p
+Servo backLeft;
+char command;
 
-char COMMAND[64];
-char STATUS[64];
-
-void setup(){ 
-    initializeSerial();
-    initializeMotors();
+void setup(){
+    backLeft.attach(3, 1000, 2000);
+    Serial.begin(9600);
 }
-
 void loop(){
-    // Recieve Command from Serial Port
-    receiveCommand(COMMAND);
-    // Send command and return Status
-    execCommand(COMMAND, STATUS);
-    // Clear Command for Next Loop
-    clearCommand(COMMAND);
-    // Return Status Message
-    Serial.println(STATUS);
-
-    delay(100);
-
+    if (Serial.available()){
+        command = Serial.read();
+        switch (command) {
+            case 'l':
+                backLeft.write(0);
+                Serial.println("OFF");
+                break;
+            case 'h':
+                backLeft.write(180);
+                Serial.println("FULL SPEED");
+                break;
+            default:
+                int speed = command - '0';
+                backLeft.write(speed*18);
+                Serial.print(speed*10);
+                Serial.println(" %");
+                break;
+        }
+    }
 }

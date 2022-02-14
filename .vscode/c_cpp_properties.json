@@ -1,0 +1,62 @@
+//
+// !!! WARNING !!! AUTO-GENERATED FILE!
+// PLEASE DO NOT MODIFY IT AND USE "platformio.ini":
+// https://docs.platformio.org/page/projectconf/section_env_build.html#build-flags
+//
+{
+    "configurations": [
+        {
+            "name": "PlatformIO",
+            "includePath": [
+                "/Users/rbyrne/github/raspifly/include",
+                "/Users/rbyrne/github/raspifly/src",
+                "/Users/rbyrne/github/raspifly/.pio/libdeps/uno/Servo/src",
+                "/Users/rbyrne/github/raspifly/.pio/libdeps/uno/I2Cdevlib-MPU6050",
+                "/Users/rbyrne/github/raspifly/.pio/libdeps/uno/I2Cdevlib-Core",
+                "/Users/rbyrne/.platformio/packages/framework-arduino-avr/libraries/Wire/src",
+                "/Users/rbyrne/.platformio/packages/framework-arduino-avr/cores/arduino",
+                "/Users/rbyrne/.platformio/packages/framework-arduino-avr/variants/standard",
+                "/Users/rbyrne/.platformio/packages/framework-arduino-avr/libraries/EEPROM/src",
+                "/Users/rbyrne/.platformio/packages/framework-arduino-avr/libraries/HID/src",
+                "/Users/rbyrne/.platformio/packages/framework-arduino-avr/libraries/SPI/src",
+                "/Users/rbyrne/.platformio/packages/framework-arduino-avr/libraries/SoftwareSerial/src",
+                ""
+            ],
+            "browse": {
+                "limitSymbolsToIncludedHeaders": true,
+                "path": [
+                    "/Users/rbyrne/github/raspifly/include",
+                    "/Users/rbyrne/github/raspifly/src",
+                    "/Users/rbyrne/github/raspifly/.pio/libdeps/uno/Servo/src",
+                    "/Users/rbyrne/github/raspifly/.pio/libdeps/uno/I2Cdevlib-MPU6050",
+                    "/Users/rbyrne/github/raspifly/.pio/libdeps/uno/I2Cdevlib-Core",
+                    "/Users/rbyrne/.platformio/packages/framework-arduino-avr/libraries/Wire/src",
+                    "/Users/rbyrne/.platformio/packages/framework-arduino-avr/cores/arduino",
+                    "/Users/rbyrne/.platformio/packages/framework-arduino-avr/variants/standard",
+                    "/Users/rbyrne/.platformio/packages/framework-arduino-avr/libraries/EEPROM/src",
+                    "/Users/rbyrne/.platformio/packages/framework-arduino-avr/libraries/HID/src",
+                    "/Users/rbyrne/.platformio/packages/framework-arduino-avr/libraries/SPI/src",
+                    "/Users/rbyrne/.platformio/packages/framework-arduino-avr/libraries/SoftwareSerial/src",
+                    ""
+                ]
+            },
+            "defines": [
+                "PLATFORMIO=50205",
+                "ARDUINO_AVR_UNO",
+                "F_CPU=16000000L",
+                "ARDUINO_ARCH_AVR",
+                "ARDUINO=10808",
+                "__AVR_ATmega328P__",
+                ""
+            ],
+            "cStandard": "c11",
+            "cppStandard": "c++11",
+            "compilerPath": "/Users/rbyrne/.platformio/packages/toolchain-atmelavr/bin/avr-gcc",
+            "compilerArgs": [
+                "-mmcu=atmega328p",
+                ""
+            ]
+        }
+    ],
+    "version": 4
+}
