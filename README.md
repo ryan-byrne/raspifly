@@ -2,7 +2,7 @@
 
 ## To-Do Alex
 
-1. Create a function for measuring height read by ultrasonic sensor
+1. Edit the [Control.h](include/Control.h) file to include a `getHeight()` function
 2. Create function to read telemetry from MPU6050
 
 ## To-Do Hein
