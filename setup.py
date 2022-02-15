@@ -13,7 +13,7 @@ setup(
     long_description_content_type="text/markdown",
     url="https://github.com/ryan-byrne/raspifly",
     entry_points={
-        "console_scripts":['raspifly-server=raspifly:main']
+        "console_scripts":['raspifly-server=raspifly.scripts:raspifly_server']
     },
     project_urls={
         "Bug Tracker": "https://github.com/pypa/sampleproject/issues",

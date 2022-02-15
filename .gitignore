@@ -1,7 +1,6 @@
 /arduino/.pio
 /penv
 /raspifly.egg-info
-/build
 /.vscode
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
@@ -12,9 +11,6 @@
 
 # testing
 /client//coverage
-
-# production
-/build
 
 # misc
 /client/.DS_Store

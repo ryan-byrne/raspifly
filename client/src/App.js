@@ -1,10 +1,13 @@
-import logo from './logo.svg';
-import './App.css';
+const App = () => {
 
-function App() {
+  const handleGet = () => fetch("/api/telemetry")
+    .then(resp=> resp.json())
+    .then(data=>console.log(data))
+    .catch(err=>console.error(err))
+
   return (
     <div className="App">
-      Hello World
+      <button onClick={handleGet}>Get API</button>
     </div>
   );
 }

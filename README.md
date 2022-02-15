@@ -6,8 +6,9 @@
 
 ## To-Do Mr. Byrne
 
-1. Create Raspberry Pi Webserver
-2. Create Serial Protocol
+1. ~~Create Raspberry Pi Webserver~~
+2. Build Out Control and Communication API
+3. Develop Control and Communication Serial
 
 ## To-Do Alex
 
