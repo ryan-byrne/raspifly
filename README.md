@@ -11,8 +11,8 @@
 
 ## To-Do Alex
 
-1. Edit the [Control.h](include/Control.h) file to include a `getHeight()` function
-2. Edit the [Control.h](include/Control.h) file to include a `getTelemetry()` function
+1. Edit the [Control.h](arduino/include/Control.h) file to include a `getHeight()` function
+2. Edit the [Control.h](arduino/include/Control.h) file to include a `getTelemetry()` function
 
 ## To-Do Hein
 
