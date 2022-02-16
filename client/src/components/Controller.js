@@ -1,53 +1,57 @@
 import { Button, Container, Form, ListGroup, ListGroupItem, Offcanvas, Table } from 'react-bootstrap';
-import {useEffect, useState} from 'react';
+import {useEffect, useRef, useState} from 'react';
 
-const xboxController = {
-  x:{type:'axes',idx:0},
-  y:{type:'axes',idx:1},
-  z_up:{type:'buttons',idx:4},
-  z_down:{type:'buttons',idx:5},
-  roll:{type:'axes',idx:3},
-  pitch:{type:'axes',idx:4},
-  yaw_right:{type:'axes',idx:2},
-  yaw_left:{type:'axes',idx:5},
-}
+var requestAnimationFrame = window.requestAnimationFrame || window.mozRequestAnimationFrame ||
+                            window.webkitRequestAnimationFrame || window.msRequestAnimationFrame;
+
+var cancelAnimationFrame = window.cancelAnimationFrame || window.mozCancelAnimationFrame;
+
+var requestId;
 
 const Controller = (props) => {
 
-  const [gamepads, setGamepads] = useState([]);
-  const [selected, setSelected] = useState(0);
+  const [options, setOptions] = useState(navigator.getGamepads());
+  const [gamepad, setGamepad] = useState({});
+  const [keyboardControl, setKeyboardControl] = useState(null);
 
-  const [surfaces, setSurfaces] = useState({buttons:[], axes:[]})
-
-  const controllerLoop = () => {
-
-    if (!gamepads[selected]){
-      return
-    }
-
-    var gamepad = gamepads[selected];
-
-    setSurfaces({
-      buttons:gamepad.buttons.map(b=>b.pressed), 
-      axes:gamepad.axes
-    })
-
-    requestAnimationFrame(controllerLoop);
-
-  }
-
-  const refreshGamepads = () => setGamepads(navigator.getGamepads());
-
-  const handleRoleSelect = (e) => console.log(e.target.value);
+  const refreshGamepads = () => setOptions(navigator.getGamepads());
 
   useEffect(()=>{
-    setSelected(0);
-    window.addEventListener("gamepadconnected", (e) => 
-      gamepads.map(g=>g.id).includes(e.gamepad.id)?null:setGamepads([...gamepads, e.gamepad]));
-    window.addEventListener("gamepaddisconnected", (e) => setGamepads([...gamepads.filter(g=>g.id!==e.gamepad.id)]));
-  },[gamepads, setSelected])
+    window.addEventListener("gamepadconnected", (e) => options.map(g=>g.id).includes(e.gamepad.id)?null:setOptions([...options, e.gamepad]));
+    window.addEventListener("gamepaddisconnected", (e) => setOptions([...options.filter(g=>g.id!==e.gamepad.id)]));
+    window.addEventListener("keydown", (e) => console.log(e.key));
+    window.addEventListener("keyup", (e) => console.log(e.key));
+  },[options])
 
-  useEffect(()=>gamepads[selected]?controllerLoop():null,[gamepads, selected])
+  useEffect(()=>{
+
+    const controlLoop = async () => {
+
+      const payload = {};
+  
+      const resp = await fetch('/api/control', {
+        method:"POST",
+        headers:{
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        },
+        body:JSON.stringify(payload)
+      })
+
+      requestId = requestAnimationFrame(controlLoop);
+
+    }
+
+    if (!gamepad.id && !keyboardControl){
+      cancelAnimationFrame(requestId);
+      return;
+    } else {
+      requestId = requestAnimationFrame(controlLoop);
+    }
+
+  },[gamepad, keyboardControl])
+  
+  console.log(keyboardControl);
 
   return (
     <Offcanvas show={props.show} onHide={props.handleHide}>
@@ -57,45 +61,21 @@ const Controller = (props) => {
         </Offcanvas.Title>
       </Offcanvas.Header>
       <Offcanvas.Body>
-        {gamepads.length} Gamepad(s) Connected
-        <Button size="sm" className="m-3" onClick={refreshGamepads}>Refresh</Button>
-        <ListGroup className="mb-3">
-          {gamepads.map((gpad, idx)=>
-            <ListGroupItem action key={idx} variant={selected===idx?"info":null} onClick={()=>setSelected(idx)}>
-              {gpad.id}
-            </ListGroupItem>  
-          )}
-        </ListGroup>
-        Axes:
-        <Table>
-          <thead>
-            <tr><th>Index</th><th>Value</th><th>Role</th></tr>
-          </thead>
-          <tbody>
-            {surfaces.axes.map((a, idx)=>
-              <tr>
-                <td>{idx}</td>
-                <td>{a}</td>
-                <td>
-                </td>
-              </tr>
+        <Form.Group>
+          <Form.Check label="Use Keyboard as Controller" checked={keyboardControl!=null} onClick={()=>setKeyboardControl(!keyboardControl?{}:null)}/>
+        </Form.Group>
+        <Form.Group>
+          {options.length} Gamepad(s) Connected
+          <Button size="sm" className="m-3" onClick={refreshGamepads}>Refresh</Button>
+          <ListGroup className="mb-3">
+            {options.map((gpad, idx)=>
+              <ListGroupItem action key={idx} variant={gpad.id==gamepad.id?"info":null} onClick={()=>setGamepad(gpad.id===gamepad.id?{}:options[idx])}
+                disabled={keyboardControl!=null}>
+                {gpad.id}
+              </ListGroupItem>  
             )}
-          </tbody>
-        </Table>
-        Buttons:
-        <Table className='text-center'>
-          <thead><th>Index</th><th>Pressed</th><th>Role</th></thead>
-          <tbody>
-            {surfaces.buttons.map((b, idx)=>
-              <tr>
-                <td>{idx}</td>
-                <td>{b?"Active":"No"}</td>
-                <td>
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </Table>
+          </ListGroup>
+        </Form.Group>
       </Offcanvas.Body>
     </Offcanvas>
   )
