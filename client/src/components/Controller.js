@@ -1,12 +1,23 @@
-import { Button, Container, ListGroup, ListGroupItem, Offcanvas } from 'react-bootstrap';
+import { Button, Container, Form, ListGroup, ListGroupItem, Offcanvas, Table } from 'react-bootstrap';
 import {useEffect, useState} from 'react';
-import { isAccordionItemSelected } from 'react-bootstrap/esm/AccordionContext';
+
+const xboxController = {
+  x:{type:'axes',idx:0},
+  y:{type:'axes',idx:1},
+  z_up:{type:'buttons',idx:4},
+  z_down:{type:'buttons',idx:5},
+  roll:{type:'axes',idx:3},
+  pitch:{type:'axes',idx:4},
+  yaw_right:{type:'axes',idx:2},
+  yaw_left:{type:'axes',idx:5},
+}
 
 const Controller = (props) => {
 
   const [gamepads, setGamepads] = useState([]);
   const [selected, setSelected] = useState(0);
-  const [state, setState] = useState({buttons:[], axes:[]});
+
+  const [surfaces, setSurfaces] = useState({buttons:[], axes:[]})
 
   const controllerLoop = () => {
 
@@ -16,8 +27,8 @@ const Controller = (props) => {
 
     var gamepad = gamepads[selected];
 
-    setState({
-      buttons:gamepad.buttons.map(b=>b.value), 
+    setSurfaces({
+      buttons:gamepad.buttons.map(b=>b.pressed), 
       axes:gamepad.axes
     })
 
@@ -27,6 +38,8 @@ const Controller = (props) => {
 
   const refreshGamepads = () => setGamepads(navigator.getGamepads());
 
+  const handleRoleSelect = (e) => console.log(e.target.value);
+
   useEffect(()=>{
     setSelected(0);
     window.addEventListener("gamepadconnected", (e) => 
@@ -34,9 +47,7 @@ const Controller = (props) => {
     window.addEventListener("gamepaddisconnected", (e) => setGamepads([...gamepads.filter(g=>g.id!==e.gamepad.id)]));
   },[gamepads, setSelected])
 
-  useEffect(()=>
-    gamepads[selected]?controllerLoop():null
-  ,[gamepads, selected])
+  useEffect(()=>gamepads[selected]?controllerLoop():null,[gamepads, selected])
 
   return (
     <Offcanvas show={props.show} onHide={props.handleHide}>
@@ -55,14 +66,36 @@ const Controller = (props) => {
             </ListGroupItem>  
           )}
         </ListGroup>
-        Buttons:
-        <ul>
-          {state.buttons.map(b=><li>{b}</li>)}
-        </ul>
         Axes:
-        <ul>
-          {state.axes.map(b=><li>{b}</li>)}
-        </ul>
+        <Table>
+          <thead>
+            <tr><th>Index</th><th>Value</th><th>Role</th></tr>
+          </thead>
+          <tbody>
+            {surfaces.axes.map((a, idx)=>
+              <tr>
+                <td>{idx}</td>
+                <td>{a}</td>
+                <td>
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </Table>
+        Buttons:
+        <Table className='text-center'>
+          <thead><th>Index</th><th>Pressed</th><th>Role</th></thead>
+          <tbody>
+            {surfaces.buttons.map((b, idx)=>
+              <tr>
+                <td>{idx}</td>
+                <td>{b?"Active":"No"}</td>
+                <td>
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </Table>
       </Offcanvas.Body>
     </Offcanvas>
   )
