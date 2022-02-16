@@ -15,6 +15,10 @@ setup(
     entry_points={
         "console_scripts":['raspifly-server=raspifly.scripts:raspifly_server']
     },
+    install_requires=[
+        'flask',
+        'pyserial'
+    ],
     project_urls={
         "Bug Tracker": "https://github.com/pypa/sampleproject/issues",
     },
