@@ -1,11 +1,14 @@
 
 import { useState } from 'react';
 import { Button } from 'react-bootstrap';
-import Controller from './components/Controller';
+
+import Control from './components/Control';
+import Communication from './components/Communication';
+import Telemetry from './components/Telemetry';
 
 const App = () => {
 
-  const [offcanvas, setOffcanvas] = useState();
+  const [settings, setSettings] = useState();
 
   const handleGet = () => fetch("/api/telemetry")
     .then(resp=> resp.json())
@@ -14,8 +17,9 @@ const App = () => {
 
   return (
     <div className="App">
-      <Button onClick={()=>setOffcanvas('controller')}>Controller</Button>
-      <Controller show={offcanvas==='controller'} handleHide={()=>setOffcanvas()}/>
+      <Control/>
+      <Telemetry/>
+      <Communication/>
     </div>
   );
 }
