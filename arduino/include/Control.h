@@ -1,4 +1,5 @@
 #include "Wire.h" // This library allows you to communicate with I2C devices.
+#include "Arduino.h" // Include Arduino Libraries
 
 #define echoPin 5
 #define trigPin 6
@@ -27,7 +28,7 @@ void beginTelemetry(){
   Wire.endTransmission(true);
 }
 
-void getTelemetry(){
+void updateTelemetry(){
   
   Wire.beginTransmission(MPU_ADDR);
   Wire.write(0x3B); // starting with register 0x3B (ACCEL_XOUT_H) [MPU-6000 and MPU-6050 Register Map and Descriptions Revision 4.2, p.40]
