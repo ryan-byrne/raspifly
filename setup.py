@@ -8,7 +8,7 @@ setup(
     version="0.0.1",
     author="Ryan Byrne",
     author_email="ryan@byrne.es",
-    description="Rasplify is an Open Source Drone Using Raspberry Pi and Arduino",
+    description="Raspifly is an Open Source Drone Using Raspberry Pi",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/ryan-byrne/raspifly",
@@ -17,7 +17,9 @@ setup(
     },
     install_requires=[
         'flask',
-        'pyserial'
+        'numpy',
+        'gpiozero',
+        'pigpio'
     ],
     project_urls={
         "Bug Tracker": "https://github.com/pypa/sampleproject/issues",
