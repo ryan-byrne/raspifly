@@ -1,8 +1,8 @@
 from time import sleep
-from gpiozero import DistanceSensor
+from raspifly import MPU6050
 
-sensor = DistanceSensor(23, 24, max_distance=5.0)
+accel = MPU6050()
 
 while True:
-    print('Distance to nearest object is', sensor.distance, 'm')
-    sleep(0.1)
+    print(accel.read())
+    sleep(1)

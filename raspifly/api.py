@@ -1,4 +1,5 @@
-from flask import Flask, jsonify, request, render_template
+from flask import Flask, jsonify, request, render_template, Response, stream_with_context
+import json, time
 from . import Raspifly
 
 # Variable to house the Raspifly class
@@ -32,7 +33,24 @@ def post_control():
 
 @server.route('/api/telemetry', methods=["GET"])
 def get_telemetry():
-    return jsonify( raspifly.get_telemetry( request.args.get('fields[]').split(",") ) )
+
+    def generate():
+        while raspifly.active:
+            time.sleep(0.5)
+            data = json.dumps({
+                "z_pos":raspifly.z_pos
+            })
+            yield f"data:{json.dumps(data)}\n\n"
+        while not raspifly.active:
+            time.sleep(1)
+            yield "data:{}"
+
+
+    response = Response(stream_with_context(generate()), mimetype="text/event-stream")
+    response.headers["Cache-Control"] = "no-cache"
+    response.headers["X-Accel-Buffering"] = "no"
+    
+    return response
 
 @server.route('/')
 def index():
