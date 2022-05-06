@@ -1,9 +1,7 @@
 
 const Telemetry = ({active}) => {
 
-    const [data, setData] = React.useState({
-        z_pos:0
-    })
+    const [data, setData] = React.useState({})
 
     React.useEffect(()=>{
 

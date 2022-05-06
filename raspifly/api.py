@@ -35,15 +35,15 @@ def post_control():
 def get_telemetry():
 
     def generate():
+
         while raspifly.active:
-            time.sleep(0.5)
+            time.sleep(0.1)
+            # TODO: Add back US Sensor
             data = json.dumps({
-                "z_pos":raspifly.z_pos
+                "pitch":raspifly.accelerometer.pitch,
+                "roll":raspifly.accelerometer.roll
             })
             yield f"data:{json.dumps(data)}\n\n"
-        while not raspifly.active:
-            time.sleep(1)
-            yield "data:{}"
 
 
     response = Response(stream_with_context(generate()), mimetype="text/event-stream")
