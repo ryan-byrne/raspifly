@@ -1,24 +1,14 @@
 import time
-from gpiozero import DistanceSensor, Servo
-from gpiozero.pins.pigpio import PiGPIOFactory
-from raspifly import MPU6050
+from raspifly import Raspifly
 
-ECHO_PIN = 23
-TRIG_PIN = 24
+drone = Raspifly()
 
-FR_PIN = 5
-FL_PIN = 6
-BR_PIN = 13
-BL_PIN = 19
+drone.start()
 
-accelerometer = MPU6050()
+input("Get Moving")
 
-while True:
-    try:
-        print("roll: ", accelerometer.roll_vel)
-        print("pitch: ", accelerometer.pitch_vel)
-        print()
-    except KeyboardInterrupt:
-        accelerometer.close()
-        break
-    time.sleep(0.1)
+drone.set_motor_speed(motor=0, percent_speed=30)
+
+input("Press Enter to Stop")
+
+drone.stop()
