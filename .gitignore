@@ -3,6 +3,7 @@
 /penv
 /raspifly.egg-info
 /build
+/dist
 
 /raspifly/client/node_modules
 /raspifly/client/yarn.lock

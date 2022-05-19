@@ -13,7 +13,11 @@ setup(
     long_description_content_type="text/markdown",
     url="https://github.com/ryan-byrne/raspifly",
     entry_points={
-        "console_scripts":['raspifly-server=raspifly.scripts:raspifly_server']
+        "console_scripts":[
+            'raspifly-server=raspifly.scripts:server',
+            'raspifly-test=raspifly.scripts:test',
+            'raspifly-calibrate=raspifly.scripts:calibrate'
+        ]
     },
     install_requires=[
         'flask',

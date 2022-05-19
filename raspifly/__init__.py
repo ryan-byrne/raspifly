@@ -26,7 +26,7 @@ GYRO_FULL_SCALES = [250, 500, 1000, 2000]
 
 class MPU6050():
 
-    def __init__(self, address=0x68, channel=1, accelerometer_range=0, gyrometer_range=0):
+    def __init__(self, address=0x68, channel=1, accelerometer_range=0, gyrometer_range=0, sample_rate=100):
 
         print(f"Initializing MPU6050 at channel: {channel} and address: {address}...")
 
@@ -51,6 +51,8 @@ class MPU6050():
         self.ROLL_VEL_OFFSET = 0.0
         self.PITCH_VEL_OFFSET = 0.0
         self.YAW_VEL_OFFSET = 0.0
+
+        self._sample_rate = sample_rate # Hz
 
         try:
             self._write(PWR_MGT_1, 1)
@@ -110,12 +112,15 @@ class MPU6050():
                 continue
 
     def _update_values(self):
+
         self.roll = -math.pi / 2 * math.sin( math.pi * self._read(ACCEL_X_HIGH)/ 32768) - self.ROLL_OFFSET
         self.pitch = -math.pi / 2 * math.sin( math.pi * self._read(ACCEL_Y_HIGH)/ 32768) - self.PITCH_OFFSET
         self.yaw = -math.pi / 2 * math.sin( math.pi * self._read(ACCEL_Z_HIGH)/ 32768) - self.YAW_OFFSET
         self.roll_vel = 250/180 * math.pi * math.sin( math.pi * self._read(GYRO_Y_HIGH) / 32768) - self.ROLL_VEL_OFFSET
         self.pitch_vel = 250/180 * math.pi * math.sin( math.pi * self._read(GYRO_X_HIGH) / 32768) - self.PITCH_VEL_OFFSET
         self.yaw_vel = 250/180 * math.pi * math.sin( math.pi * self._read(GYRO_Z_HIGH) / 32768) - self.YAW_VEL_OFFSET
+
+        sleep(1/self._sample_rate)
     
     def _write(self, addr, cmd):
         self._bus.write_byte_data(self._ADDRESS, addr, cmd)
@@ -132,7 +137,7 @@ class MPU6050():
 
 class Raspifly():
 
-    def __init__(self, mass=0.5, length=167, width=167, hover_power=30, layout='x', p_gain=4.0, i_gain=4.0, d_gain=4.0, hz=40):
+    def __init__(self, mass=0.5, length=167, width=167, hover_power=30, layout='x', p_gain=4.0, i_gain=4.0, d_gain=4.0, hz=40, us_echo_pin=23, us_trig_pin=24, motor_pins=[5, 6, 13, 19]):
 
         """Class for Drone Control using Python     
         """
@@ -141,16 +146,23 @@ class Raspifly():
         self._dim = [length/1000, width/1000] # Dimensions of Drone (mm -> m)
         self._p_gain = p_gain # Proportional Gain
         self._read_rate = 1/hz # Rate to send commands to the motors
+        print("Importing PiGPIO Factory...")
         self._factory = PiGPIOFactory() # Set the pin factory
-
         self.active = False # Control Loop Active
-    
-    def start(self, motor_pins=[5, 6, 13, 19], us_echo_pin=23, us_trig_pin=24):
-        print("Starting Raspifly...")
-        # Initialize Inputs
-        self._initialize_inputs(us_echo_pin, us_trig_pin)
+
         # Initialize Motors
         self._initialize_motors(motor_pins)
+        self.motor_speeds = [0.0, 0.0, 0.0, 0.0]
+
+        print(f"\tInitializing Ultrasonic Sensor with Echo={us_echo_pin} and Trig={us_trig_pin}")
+        self.ultrasonic_sensor = DistanceSensor(us_echo_pin, us_trig_pin, max_distance=5.0, pin_factory=self._factory)
+
+        print(f"\tInitializing Accelerometer on the I2C Bus")
+        self.accelerometer = MPU6050()
+    
+    def start(self):
+        
+        print("Starting Raspifly...")
         
         self.active = True
 
@@ -163,13 +175,16 @@ class Raspifly():
         print("Shutting down Raspifly...")
 
         print("Closing Motors")
-        [_motor.close() for _motor in self._motors]
+        self.stop_motors()
 
         print("Closing Accelerometer")
         self.accelerometer.close()
 
         print("Closing Ultrasonic Sensor")
         self.ultrasonic_sensor.close()
+
+    def stop_motors(self):
+        [_motor.close() for _motor in self._motors]
 
     def _main_control_loop(self):
 
@@ -189,14 +204,6 @@ class Raspifly():
         ]
 
         # Actuall Roll, Pitch and Yaw Velocities
-        current = [
-            [self.accelerometer.roll_vel],
-            [self.accelerometer.pitch_vel],
-            [self.accelerometer.yaw_vel]
-        ]
-
-        # Calculate Error
-        error = np.subtract( current, target )
 
         # P Controller
 
@@ -204,54 +211,48 @@ class Raspifly():
 
         # D Controller
 
+        self.motor_speeds = [30.0, 30.0, 30.0, 30.0]
 
-
-    def _thrust_to_signal(self, thrust):
-        return 1044 + 277*thrust + -47.1*thrust**2 + 4.07*thrust**3
-
-    def _initialize_inputs(self, _echo, _trig):
-
-        print("Initializing Inputs...")
-
-        print(f"\tInitializing Ultrasonic Sensor with Echo={_echo} and Trig={_trig}")
-        self.ultrasonic_sensor = DistanceSensor(_echo, _trig, max_distance=5.0, pin_factory=self._factory)
-
-        print(f"\tInitializing Accelerometer on the I2C Bus")
-        self.accelerometer = MPU6050()
+        [self.set_motor_speed(i, speed) for i, speed in enumerate(self.motor_speeds)]
 
     def set_motor_speed(self, motor=None, percent_speed=None):
-
         self._motors[motor].value = percent_speed / 50 - 1
 
     def calibrate_motors(self, 
             min_pulse=1000, 
             max_pulse=2000,
-            pins=[5,6,13,19]
+            motor_pins=[5, 6, 13, 19]
         ):
+
+        self._initialize_motors(motor_pins)
 
         input("Plug in the Raspberry Pi, power down the motors, then Press Enter to Begin Motor Calibration")
 
-        self._initialize_motors(pins)
-
         print("Setting Maximum Throttle...")
 
-        for motor in [self._front_right,self._front_left,self._back_left,self._back_right]:
+        for motor in self._motors:
             motor.value = max_pulse / 750 - 2
 
-        input("Power on your ESCs. Press Enter to after Beeps")
+        input("Power on your ESCs. Press Enter after Beeping stops")
 
         print("Setting Minimum Calibration")
 
-        for motor in [self._front_right,self._front_left,self._back_left,self._back_right]:
+        for motor in self._motors:
             motor.value = min_pulse / 750 - 2
 
-        print('Motor Calibration Complete.')
+        input("Press Enter after beeping stops.")
 
-    def _initialize_motors(self, pins):
+        print('Motor Calibration Complete. Shutting Down Motors')
 
-        print("Initializing Motors...")
+        for motor in self._motors:
+            motor.close()
+
+    def _initialize_motors(self, pins=[5, 6, 13, 19]):
 
         self._motors = []
 
-        for pin in pins:
+        for i, pin in enumerate(pins):
+            print(f"\tInitializing Motor {i} at pin:{pin}...")
             self._motors.append( Servo(pin, pin_factory=self._factory) )
+        
+        [self.set_motor_speed(i, 0) for i in range(4)]
