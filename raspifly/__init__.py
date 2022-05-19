@@ -204,8 +204,17 @@ class Raspifly():
         ]
 
         # Actuall Roll, Pitch and Yaw Velocities
+        actual = [
+            [self.accelerometer.roll_vel],
+            [self.accelerometer.pitch_vel],
+            [self.accelerometer.yaw_vel]
+        ]
+
+        error = np.subtract( target, actual )
 
         # P Controller
+
+        P = self._p_gain * error
 
         # I Controller
 
