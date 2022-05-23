@@ -15,7 +15,7 @@ def test():
     from . import Raspifly
     print("Test Mode")
     drone = Raspifly()
-    input("Start?")
+    input("Start Test?")
     drone.start()
     input("Stop?")
     drone.stop()

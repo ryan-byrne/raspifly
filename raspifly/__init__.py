@@ -24,6 +24,17 @@ TEMP_OUT_HIGH = 0x41
 ACCEL_FULL_SCALES = [2, 4, 8, 16]
 GYRO_FULL_SCALES = [250, 500, 1000, 2000]
 
+class BLHeli32():
+    def __init__(self, pin=None, min_pulse=1000, max_pulse=2000, frame_width=20000):
+        self._pwm = Servo(pin, pin_factory=PiGPIOFactory(), min_pulse_width=min_pulse/1000000, max_pulse_width=max_pulse/1000000, frame_width=frame_width/1000000)
+        self.set_speed(0)
+
+    def set_speed(self, speed):
+        self._pwm.value = speed / 50 - 1
+
+    def close(self):
+        self._pwm.close() 
+
 class MPU6050():
 
     def __init__(self, address=0x68, channel=1, accelerometer_range=0, gyrometer_range=0, sample_rate=100):
@@ -170,24 +181,29 @@ class Raspifly():
         """
 
         self._max_motor_thrust = max_motor_thrust # Maximum Single Motor Thrust (N)
-        self._mass = mass # Mass of the drone (kg)
+        self._hover_thrust = ( mass * 9.8 / 4 ) / max_motor_thrust * 100
         self._dim = [length/1000, width/1000] # Dimensions of Drone (mm -> m)
+        
         self._p_gain = p_gain # Proportional Gain
+        self._i_gain = i_gain # Integral Gain
+        self._d_gain = d_gain # Derivative Gain
+        self._prev_error = [[0.0],[0.0],[0.0]]
+        self._prev_time = time()
+
         self._read_rate = 1/hz # Rate to send commands to the motors
         self.active = False # Control Loop Active
 
         if not simulation_mode:
-            # Initialize Motors
-            self._initialize_motors(motor_pins)
-            self.motor_speeds = [0.0, 0.0, 0.0, 0.0]
-
-            print(f"\tInitializing Ultrasonic Sensor with Echo={us_echo_pin} and Trig={us_trig_pin}")
-            self.ultrasonic_sensor = DistanceSensor(us_echo_pin, us_trig_pin, max_distance=5.0, pin_factory=self._factory)
-
+            
             print(f"\tInitializing Accelerometer on the I2C Bus")
             self.accelerometer = MPU6050()
+            print(f"\tInitializing Ultrasonic Sensor with Echo={us_echo_pin} and Trig={us_trig_pin}")
+            self.ultrasonic_sensor = DistanceSensor(us_echo_pin, us_trig_pin, max_distance=5.0, pin_factory=PiGPIOFactory())
+            # Initialize Motors
+            self.motors = [BLHeli32(pin) for pin in motor_pins]
+
         else:
-            self._motors = [SimMotor(), SimMotor(), SimMotor(), SimMotor()]
+            self.motors = [SimMotor(), SimMotor(), SimMotor(), SimMotor()]
             self.ultrasonic_sensor = SimDistanceSensor()
             self.accelerometer = SimMPU6050()
     
@@ -206,7 +222,7 @@ class Raspifly():
         print("Shutting down Raspifly...")
 
         print("Closing Motors")
-        [_motor.close() for _motor in self._motors]
+        [m.close() for m in self.motors]
 
         print("Closing Accelerometer")
         self.accelerometer.close()
@@ -231,29 +247,64 @@ class Raspifly():
             [0.0]
         ]
 
-        # Actuall Roll, Pitch and Yaw Velocities
+        # Actual Roll, Pitch and Yaw Velocities
         actual = [
             [self.accelerometer.roll_vel],
             [self.accelerometer.pitch_vel],
             [self.accelerometer.yaw_vel]
         ]
 
+        # Calculate Error
         error = np.subtract( target, actual )
 
-        # P Controller
+        # Calculate Change in Time
+        dt = time() - self._prev_time
 
-        P = self._p_gain * error
+        # Proportional Controller
+        p_control = self._p_gain * error
 
-        # I Controller
+        # Integral Controller
+        #i_control = self._i_gain * np.subtract( error, self._prev_error ) * dt
 
-        # D Controller
+        # Derivative Controller
+        #d_control = self._d_gain * np.subtract( error, self._prev_error ) / dt
 
-        self.motor_speeds = [30.0, 30.0, 30.0, 30.0]
 
-        [self.set_motor_speed(i, speed) for i, speed in enumerate(self.motor_speeds)]
+        [[roll],[pitch],[yaw]] = p_control
 
-    def set_motor_speed(self, motor=None, percent_speed=None):
-        self._motors[motor].value = percent_speed / 50 - 1
+        
+
+        """
+        
+        X-Configuration
+           1  0
+            \/
+            /\ 
+           2  3 
+
+        roll = ( 3 + 0 ) - ( 2 + 1 )
+        pitch = ( 1 + 0 ) - ( 2 + 3 )
+
+        t-Configuration
+            0
+            |
+        1 -- -- 3
+            |
+            2
+
+        """
+
+        moments_of_inertia = [
+            [self.b*self.h**3/12, 0, 0],
+            [0, self.h*self.b**3/12, 0],
+            [0, 0, 0]
+        ]
+
+        motor_speeds = [30.0, 30.0, 30.0, 30.0]
+
+        [self.motors[i].set_speed(speed) for i, speed in enumerate(motor_speeds)]
+
+        self._prev_time = time()
 
     def calibrate_motors(self, 
             min_pulse=1000, 
@@ -261,35 +312,27 @@ class Raspifly():
             motor_pins=[5, 6, 13, 19]
         ):
 
-        self._initialize_motors(motor_pins)
+        self.motors = [BLHeli32(pin) for pin in motor_pins]
 
         input("Plug in the Raspberry Pi, power down the motors, then Press Enter to Begin Motor Calibration")
 
         print("Setting Maximum Throttle...")
 
-        for motor in self._motors:
-            motor.value = max_pulse / 750 - 2
+        for motor in self.motors:
+            motor.set_speed( min_pulse )
 
         input("Power on your ESCs. Press Enter after Beeping stops")
 
         print("Setting Minimum Calibration")
 
-        for motor in self._motors:
-            motor.value = min_pulse / 750 - 2
+        for motor in self.motors:
+            motor.set_speed( max_pulse )
 
         input("Press Enter after beeping stops.")
 
         print('Motor Calibration Complete. Shutting Down Motors')
 
-        for motor in self._motors:
+        for motor in self.motors:
             motor.close()
 
-    def _initialize_motors(self, pins=[5, 6, 13, 19]):
-
-        self._motors = []
-
-        for i, pin in enumerate(pins):
-            print(f"\tInitializing Motor {i} at pin:{pin}...")
-            self._motors.append( Servo(pin, pin_factory=self._factory) )
         
-        [self.set_motor_speed(i, 0) for i in range(4)]
