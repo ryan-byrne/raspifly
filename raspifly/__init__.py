@@ -135,30 +135,61 @@ class MPU6050():
         self.active = False
         self._write(PWR_MGT_1, 0)
 
+class SimMotor():
+    def close(self):
+        pass
+
+class SimDistanceSensor():
+
+    def __init__(self):
+        pass
+
+    def close(self):
+        pass
+class SimMPU6050():
+
+    def __init__(self):
+        self.roll = 0.0
+        self.pitch = 0.0
+        self.yaw = 0.0
+        self.roll_vel = 0.0
+        self.pitch_vel = 0.0
+        self.yaw_vel = 0.0
+
+    def close():
+        pass
+
 class Raspifly():
 
-    def __init__(self, mass=0.5, length=167, width=167, hover_power=30, layout='x', p_gain=4.0, i_gain=4.0, d_gain=4.0, hz=40, us_echo_pin=23, us_trig_pin=24, motor_pins=[5, 6, 13, 19]):
+    def __init__(
+        self, mass=0.5, length=167, width=167, max_motor_thrust=6.66, layout='x', p_gain=4.0, i_gain=4.0, 
+        d_gain=4.0, hz=40, us_echo_pin=23, us_trig_pin=24, motor_pins=[5, 6, 13, 19], simulation_mode=False
+    ):
 
         """Class for Drone Control using Python     
         """
-        self._hover_power = hover_power # Motor Power required to hover (%)
+
+        self._max_motor_thrust = max_motor_thrust # Maximum Single Motor Thrust (N)
         self._mass = mass # Mass of the drone (kg)
         self._dim = [length/1000, width/1000] # Dimensions of Drone (mm -> m)
         self._p_gain = p_gain # Proportional Gain
         self._read_rate = 1/hz # Rate to send commands to the motors
-        print("Importing PiGPIO Factory...")
-        self._factory = PiGPIOFactory() # Set the pin factory
         self.active = False # Control Loop Active
 
-        # Initialize Motors
-        self._initialize_motors(motor_pins)
-        self.motor_speeds = [0.0, 0.0, 0.0, 0.0]
+        if not simulation_mode:
+            # Initialize Motors
+            self._initialize_motors(motor_pins)
+            self.motor_speeds = [0.0, 0.0, 0.0, 0.0]
 
-        print(f"\tInitializing Ultrasonic Sensor with Echo={us_echo_pin} and Trig={us_trig_pin}")
-        self.ultrasonic_sensor = DistanceSensor(us_echo_pin, us_trig_pin, max_distance=5.0, pin_factory=self._factory)
+            print(f"\tInitializing Ultrasonic Sensor with Echo={us_echo_pin} and Trig={us_trig_pin}")
+            self.ultrasonic_sensor = DistanceSensor(us_echo_pin, us_trig_pin, max_distance=5.0, pin_factory=self._factory)
 
-        print(f"\tInitializing Accelerometer on the I2C Bus")
-        self.accelerometer = MPU6050()
+            print(f"\tInitializing Accelerometer on the I2C Bus")
+            self.accelerometer = MPU6050()
+        else:
+            self._motors = [SimMotor(), SimMotor(), SimMotor(), SimMotor()]
+            self.ultrasonic_sensor = SimDistanceSensor()
+            self.accelerometer = SimMPU6050()
     
     def start(self):
         
@@ -175,16 +206,13 @@ class Raspifly():
         print("Shutting down Raspifly...")
 
         print("Closing Motors")
-        self.stop_motors()
+        [_motor.close() for _motor in self._motors]
 
         print("Closing Accelerometer")
         self.accelerometer.close()
 
         print("Closing Ultrasonic Sensor")
         self.ultrasonic_sensor.close()
-
-    def stop_motors(self):
-        [_motor.close() for _motor in self._motors]
 
     def _main_control_loop(self):
 

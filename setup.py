@@ -22,8 +22,7 @@ setup(
     install_requires=[
         'flask',
         'numpy',
-        'gpiozero',
-        'pigpio'
+        'gpiozero'
     ],
     project_urls={
         "Bug Tracker": "https://github.com/pypa/sampleproject/issues",
