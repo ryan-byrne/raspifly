@@ -1,9 +1,8 @@
 from flask import Flask, jsonify, request, render_template, Response, stream_with_context
 import json, time
-from . import Raspifly
 
 # Variable to house the Raspifly class
-raspifly = Raspifly()
+raspifly = None
 
 # FLASK SERVER
 server = Flask(__name__, template_folder="./client/build", static_folder="./client/build/static")

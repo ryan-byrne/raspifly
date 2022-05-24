@@ -2,6 +2,7 @@ from time import sleep, time
 from threading import Thread
 from gpiozero import DistanceSensor, Servo
 from gpiozero.pins.pigpio import PiGPIOFactory
+from gpiozero.pins.mock import MockFactory
 import numpy as np
 import smbus, math
 
@@ -25,19 +26,28 @@ ACCEL_FULL_SCALES = [2, 4, 8, 16]
 GYRO_FULL_SCALES = [250, 500, 1000, 2000]
 
 class BLHeli32():
-    def __init__(self, pin=None, min_pulse=1000, max_pulse=2000, frame_width=20000):
-        self._pwm = Servo(pin, pin_factory=PiGPIOFactory(), min_pulse_width=min_pulse/1000000, max_pulse_width=max_pulse/1000000, frame_width=frame_width/1000000)
-        self.set_speed(0)
+    def __init__(self, pin, max_thrust=6.66, simulation_mode=False):
+        self._max_thrust = max_thrust
+        self._pwm = Servo(pin, pin_factory=PiGPIOFactory() if not simulation_mode else MockFactory())
+        self.set(0)
 
-    def set_speed(self, speed):
-        self._pwm.value = speed / 50 - 1
+    def set(self, value, unit="percent"):
+
+        if unit == 'percent':
+            self._pwm.value = value / 50 - 1
+        elif unit == 'newtons':
+            self._pwm.value = value / self._max_thrust / 50 - 1
+        else:
+            raise ValueError(f"The unit '{unit}' is invalid")
 
     def close(self):
-        self._pwm.close() 
+        self._pwm.close()
 
 class MPU6050():
 
-    def __init__(self, address=0x68, channel=1, accelerometer_range=0, gyrometer_range=0, sample_rate=100):
+    def __init__(self, address=0x68, channel=1, accelerometer_range=0, gyrometer_range=0, sample_rate=100, simulation_mode=False):
+
+        self._sim_mode = simulation_mode
 
         print(f"Initializing MPU6050 at channel: {channel} and address: {address}...")
 
@@ -145,18 +155,6 @@ class MPU6050():
     def close(self):
         self.active = False
         self._write(PWR_MGT_1, 0)
-
-class SimMotor():
-    def close(self):
-        pass
-
-class SimDistanceSensor():
-
-    def __init__(self):
-        pass
-
-    def close(self):
-        pass
 class SimMPU6050():
 
     def __init__(self):
@@ -173,7 +171,7 @@ class SimMPU6050():
 class Raspifly():
 
     def __init__(
-        self, mass=0.5, length=167, width=167, max_motor_thrust=6.66, layout='x', p_gain=4.0, i_gain=4.0, 
+        self, mass=0.5, h=167, b=167, max_motor_thrust=6.66, layout='x', p_gain=4.0, i_gain=4.0, 
         d_gain=4.0, hz=40, us_echo_pin=23, us_trig_pin=24, motor_pins=[5, 6, 13, 19], simulation_mode=False
     ):
 
@@ -182,7 +180,7 @@ class Raspifly():
 
         self._max_motor_thrust = max_motor_thrust # Maximum Single Motor Thrust (N)
         self._hover_thrust = ( mass * 9.8 / 4 ) / max_motor_thrust * 100
-        self._dim = [length/1000, width/1000] # Dimensions of Drone (mm -> m)
+        self._h ,self._b = h, b
         
         self._p_gain = p_gain # Proportional Gain
         self._i_gain = i_gain # Integral Gain
@@ -193,19 +191,12 @@ class Raspifly():
         self._read_rate = 1/hz # Rate to send commands to the motors
         self.active = False # Control Loop Active
 
-        if not simulation_mode:
-            
-            print(f"\tInitializing Accelerometer on the I2C Bus")
-            self.accelerometer = MPU6050()
-            print(f"\tInitializing Ultrasonic Sensor with Echo={us_echo_pin} and Trig={us_trig_pin}")
-            self.ultrasonic_sensor = DistanceSensor(us_echo_pin, us_trig_pin, max_distance=5.0, pin_factory=PiGPIOFactory())
-            # Initialize Motors
-            self.motors = [BLHeli32(pin) for pin in motor_pins]
-
-        else:
-            self.motors = [SimMotor(), SimMotor(), SimMotor(), SimMotor()]
-            self.ultrasonic_sensor = SimDistanceSensor()
-            self.accelerometer = SimMPU6050()
+        print(f"\tInitializing Accelerometer on the I2C Bus")
+        self.accelerometer = MPU6050() if not simulation_mode else SimMPU6050()
+        print(f"\tInitializing Ultrasonic Sensor with Echo={us_echo_pin} and Trig={us_trig_pin}")
+        self.ultrasonic_sensor = DistanceSensor(us_echo_pin, us_trig_pin, max_distance=5.0, pin_factory=PiGPIOFactory() if not simulation_mode else MockFactory())
+        # Initialize Motors
+        self.motors = [BLHeli32(pin, max_thrust=6.66, simulation_mode=simulation_mode) for pin in motor_pins]
     
     def start(self):
         
@@ -254,6 +245,8 @@ class Raspifly():
             [self.accelerometer.yaw_vel]
         ]
 
+        print(actual)
+
         # Calculate Error
         error = np.subtract( target, actual )
 
@@ -269,10 +262,8 @@ class Raspifly():
         # Derivative Controller
         #d_control = self._d_gain * np.subtract( error, self._prev_error ) / dt
 
-
-        [[roll],[pitch],[yaw]] = p_control
-
-        
+        # Store the output command
+        output = p_control
 
         """
         
@@ -295,44 +286,35 @@ class Raspifly():
         """
 
         moments_of_inertia = [
-            [self.b*self.h**3/12, 0, 0],
-            [0, self.h*self.b**3/12, 0],
-            [0, 0, 0]
+            [ self._b*self._h**3/12 , 0 , 0 ],
+            [ 0 , self._h*self._b**3/12, 0 ],
+            [ 0 , 0 , 0 ]
         ]
 
         motor_speeds = [30.0, 30.0, 30.0, 30.0]
 
-        [self.motors[i].set_speed(speed) for i, speed in enumerate(motor_speeds)]
+        [self.motors[i].set(speed) for i, speed in enumerate(motor_speeds)]
 
         self._prev_time = time()
 
-    def calibrate_motors(self, 
-            min_pulse=1000, 
-            max_pulse=2000,
-            motor_pins=[5, 6, 13, 19]
-        ):
-
-        self.motors = [BLHeli32(pin) for pin in motor_pins]
+    def calibrate_motors(self):
 
         input("Plug in the Raspberry Pi, power down the motors, then Press Enter to Begin Motor Calibration")
 
         print("Setting Maximum Throttle...")
 
         for motor in self.motors:
-            motor.set_speed( min_pulse )
+            motor.set( 100 )
 
         input("Power on your ESCs. Press Enter after Beeping stops")
 
         print("Setting Minimum Calibration")
 
         for motor in self.motors:
-            motor.set_speed( max_pulse )
+            motor.set( 0 )
 
         input("Press Enter after beeping stops.")
 
-        print('Motor Calibration Complete. Shutting Down Motors')
-
-        for motor in self.motors:
-            motor.close()
+        print("Motor calibration complete")
 
         
