@@ -4,7 +4,8 @@ from gpiozero import DistanceSensor, Servo
 from gpiozero.pins.pigpio import PiGPIOFactory
 from gpiozero.pins.mock import MockFactory
 import numpy as np
-import smbus, math
+import math
+import smbus2 as smbus
 
 PWR_MGT_1 = 0x6B
 CONFIG = 0x1A 
@@ -26,9 +27,9 @@ ACCEL_FULL_SCALES = [2, 4, 8, 16]
 GYRO_FULL_SCALES = [250, 500, 1000, 2000]
 
 class BLHeli32():
-    def __init__(self, pin, max_thrust=6.66, simulation_mode=False):
+    def __init__(self, pin, factory, max_thrust=6.66, ):
         self._max_thrust = max_thrust
-        self._pwm = Servo(pin, pin_factory=PiGPIOFactory() if not simulation_mode else MockFactory())
+        self._pwm = Servo(pin, pin_factory=factory)
         self.set(0)
 
     def set(self, value, unit="percent"):
@@ -191,12 +192,14 @@ class Raspifly():
         self._read_rate = 1/hz # Rate to send commands to the motors
         self.active = False # Control Loop Active
 
+        factory = MockFactory() if simulation_mode else PiGPIOFactory()
+
         print(f"\tInitializing Accelerometer on the I2C Bus")
         self.accelerometer = MPU6050() if not simulation_mode else SimMPU6050()
         print(f"\tInitializing Ultrasonic Sensor with Echo={us_echo_pin} and Trig={us_trig_pin}")
-        self.ultrasonic_sensor = DistanceSensor(us_echo_pin, us_trig_pin, max_distance=5.0, pin_factory=PiGPIOFactory() if not simulation_mode else MockFactory())
+        self.ultrasonic_sensor = DistanceSensor(us_echo_pin, us_trig_pin, max_distance=5.0, pin_factory=factory)
         # Initialize Motors
-        self.motors = [BLHeli32(pin, max_thrust=6.66, simulation_mode=simulation_mode) for pin in motor_pins]
+        self.motors = [BLHeli32(pin, max_thrust=6.66, factory=factory) for pin in motor_pins]
     
     def start(self):
         

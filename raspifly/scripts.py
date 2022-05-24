@@ -15,7 +15,7 @@ def _get_server_args():
 def test():
     from . import Raspifly
     print("Test Mode")
-    drone = Raspifly()
+    drone = Raspifly(simulation_mode=True)
     input("Start Test?")
     drone.start()
     input("Stop?")
