@@ -15,10 +15,10 @@ def _get_server_args():
 def test():
     from . import Raspifly
     print("Test Mode")
-    drone = Raspifly(simulation_mode=True)
-    input("Start Test?")
+    drone = Raspifly()
+    print("Start?")
     drone.start()
-    input("Stop?")
+    print("Stop?")
     drone.stop()
 
 def calibrate():

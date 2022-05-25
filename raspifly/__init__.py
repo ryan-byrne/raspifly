@@ -96,22 +96,28 @@ class MPU6050():
 
         print("\tCalculating Accelerometer Value Offsets...")
 
-        _roll, _pitch, _roll_vel, _pitch_vel = [], [], [], []
+        _roll, _pitch, _yaw, _roll_rate, _pitch_rate, _yaw_rate = [], [], [], [], [], []
 
         def _average(list):
             return sum(list) / len(list)
 
         for i in range(100):
             self._update_values()
-            _roll.append(self.roll)
-            _pitch.append(self.pitch)
-            _roll_vel.append(self.roll_vel)
-            _pitch_vel.append(self.pitch_vel)
+            [roll], [pitch], [yaw] = self.angles
+            _roll.append(roll)
+            _pitch.append(pitch)
+            _yaw.append(yaw)
+            [roll_rate], [pitch_rate], [yaw_rate] = self.rates
+            _roll_rate.append(roll_rate)
+            _pitch_rate.append(pitch_rate)
+            _yaw_rate.append(yaw_rate)
 
         self.ROLL_OFFSET = _average(_roll)
         self.PITCH_OFFSET = _average(_pitch)
-        self.ROLL_VEL_OFFSET = _average(_roll_vel)
-        self.PITCH_VEL_OFFSET = _average(_pitch_vel)
+        self.YAW_OFFSET = _average(_yaw)
+        self.ROLL_VEL_OFFSET = _average(_roll_rate)
+        self.PITCH_VEL_OFFSET = _average(_pitch_rate)
+        self.YAW_VEL_OFFSET = _average(_yaw_rate)
 
         print(
             f"""
