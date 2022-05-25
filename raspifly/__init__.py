@@ -64,10 +64,8 @@ class MPU6050():
         self._gyro_range = ACCEL_FULL_SCALES[gyrometer_range]
 
         # Setting initial telemetry values
-        self.roll = 0
-        self.pitch = 0
-        self.roll_vel = 0
-        self.pitch_vel = 0
+        self.angles = [[0.0],[0.0],[0.0]]
+        self.rates = [[0.0],[0.0],[0.0]]
 
         # Zeroing Offsets
         self.ROLL_OFFSET = 0.0
@@ -138,12 +136,17 @@ class MPU6050():
 
     def _update_values(self):
 
-        self.roll = -math.pi / 2 * math.sin( math.pi * self._read(ACCEL_X_HIGH)/ 32768) - self.ROLL_OFFSET
-        self.pitch = -math.pi / 2 * math.sin( math.pi * self._read(ACCEL_Y_HIGH)/ 32768) - self.PITCH_OFFSET
-        self.yaw = -math.pi / 2 * math.sin( math.pi * self._read(ACCEL_Z_HIGH)/ 32768) - self.YAW_OFFSET
-        self.roll_vel = 250/180 * math.pi * math.sin( math.pi * self._read(GYRO_Y_HIGH) / 32768) - self.ROLL_VEL_OFFSET
-        self.pitch_vel = 250/180 * math.pi * math.sin( math.pi * self._read(GYRO_X_HIGH) / 32768) - self.PITCH_VEL_OFFSET
-        self.yaw_vel = 250/180 * math.pi * math.sin( math.pi * self._read(GYRO_Z_HIGH) / 32768) - self.YAW_VEL_OFFSET
+        roll = -math.pi / 2 * math.sin( math.pi * self._read(ACCEL_X_HIGH)/ 32768) - self.ROLL_OFFSET
+        pitch = -math.pi / 2 * math.sin( math.pi * self._read(ACCEL_Y_HIGH)/ 32768) - self.PITCH_OFFSET
+        yaw = -math.pi / 2 * math.sin( math.pi * self._read(ACCEL_Z_HIGH)/ 32768) - self.YAW_OFFSET
+
+        self.angles = [[roll],[pitch],[yaw]]
+
+        roll_rate = 250/180 * math.pi * math.sin( math.pi * self._read(GYRO_Y_HIGH) / 32768) - self.ROLL_VEL_OFFSET
+        pitch_rate = 250/180 * math.pi * math.sin( math.pi * self._read(GYRO_X_HIGH) / 32768) - self.PITCH_VEL_OFFSET
+        yaw_rate = 250/180 * math.pi * math.sin( math.pi * self._read(GYRO_Z_HIGH) / 32768) - self.YAW_VEL_OFFSET
+
+        self.rates = [[roll_rate],[pitch_rate],[yaw_rate]]
 
         sleep(1/self._sample_rate)
     
@@ -162,18 +165,20 @@ class MPU6050():
 class SimMPU6050():
 
     def __init__(self):
-        self.roll = 0.0
-        self.pitch = 0.0
-        self.yaw = 0.0
-        self.roll_vel = 0.0
-        self.pitch_vel = 0.0
-        self.yaw_vel = 0.0
+        self.angles = [[0.0],[0.0],[0.0]]
+        self.rates = [[0.0],[0.0],[0.0]]
 
     def close(self):
         pass
 
     def apply_thrusts(self, thrusts):
-        print(thrusts)
+        
+        t_0, t_1, t_2, t_3 = thrusts
+
+        torques = [
+            []
+        ]
+
 
 class SimMotor():
 
@@ -267,13 +272,7 @@ class Raspifly():
         ]
 
         # Actual Roll, Pitch and Yaw Velocities
-        actual = [
-            [self.accelerometer.roll_vel],
-            [self.accelerometer.pitch_vel],
-            [self.accelerometer.yaw_vel]
-        ]
-
-        #print(actual)
+        actual = self.accelerometer.rates
 
         # Calculate Error
         error = np.subtract( target, actual )
