@@ -14,9 +14,7 @@ setup(
     url="https://github.com/ryan-byrne/raspifly",
     entry_points={
         "console_scripts":[
-            'raspifly-server=raspifly.scripts:server',
-            'raspifly-test=raspifly.scripts:test',
-            'raspifly-calibrate=raspifly.scripts:calibrate'
+            'raspifly-server=raspifly.scripts:server'
         ]
     },
     install_requires=[

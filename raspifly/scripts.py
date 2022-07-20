@@ -1,5 +1,5 @@
 import argparse
-from . import Raspifly
+from .server import app
 
 def _get_server_args():
     
@@ -12,26 +12,8 @@ def _get_server_args():
 
     return parser.parse_args()
 
-def test():
-    print("Test Mode")
-    drone = Raspifly()
-    print("Start?")
-    drone.start()
-    print("Stop?")
-    drone.stop()
-
-def calibrate():
-    print("Calibration Mode")
-    drone = Raspifly()
-    drone.calibrate_motors()
-
 def server():
-    from .server import server
     # Retrieve Command Line Arguments
     args = _get_server_args()
-
-    # Create Raspifly Class and update raspifly variable on server
-    server.raspifly = Raspifly(simulation_mode=args.sim)
-
     # Start the server
-    server.run(debug=args.debug, host=args.host, port=args.port)
+    app.run(debug=args.debug, host=args.host, port=args.port)
