@@ -1,9 +1,9 @@
 *.log
 *.pyc
-/penv
+/env
 /raspifly.egg-info
 /build
 /dist
-
+/node_modules
 /raspifly/client/node_modules
 /raspifly/client/yarn.lock
