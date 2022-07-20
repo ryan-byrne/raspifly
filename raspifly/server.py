@@ -1,22 +1,11 @@
-from flask import Flask, Blueprint, jsonify
-from .devices import Drone
+from flask import Flask
+from .api import apiv1
 
 # FLASK SERVER
 app = Flask(__name__)
 # Add Blueprints
-api = Blueprint('api', __name__)
-app.register_blueprint(api)
-# Drone Class
-drone = Drone()
+app.register_blueprint(apiv1)
 
 @app.route('/')
 def index():
     return "Homepage"
-
-@app.route('/api/v1/status/')
-def status():
-    return jsonify(drone.status())
-
-@app.route('/api/v1/startup')
-def startup():
-    return drone.start()

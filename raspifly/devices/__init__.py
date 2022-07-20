@@ -12,6 +12,7 @@ class Drone():
 
         """Class for Drone Control using Python     
         """
+        self._status = 0
 
         pass
     
@@ -157,5 +158,11 @@ class Drone():
         print("Motor calibration complete")
 
     def status(self):
-        # TODO
-        return {"this":"is a status"}
+        """
+        Status Codes:
+
+        0: Idle
+        
+
+        """
+        return self._status
