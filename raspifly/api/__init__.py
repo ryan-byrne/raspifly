@@ -6,10 +6,31 @@ apiv1 = Blueprint('api', __name__, url_prefix='/api/v1')
 # Drone Class
 drone = Drone()
 
-@apiv1.route('/status/', methods=['GET'])
-def status():
-    return jsonify(drone.status())
+_OPENAPI = "3.0.0"
 
-@apiv1.route('/startup/', methods=['POST'])
-def startup():
-    return drone.start(**{})
+_INFO = {
+    "version":"0.0.1",
+    "title":"Raspifly API",
+    "license":{
+        "name":"MIT"
+    }
+}
+
+@apiv1.route('/info/', methods=['GET'])
+def info():
+		return jsonify(_INFO)
+
+@apiv1.route('/openapi/', methods=['GET'])
+def openapi():
+		return jsonify(_OPENAPI)
+
+@apiv1.route('/configuration/<setting>', methods=['GET','POST'])
+def configuration(setting=None):
+	if request.method == 'GET' and not setting:
+		return jsonify(drone.configuration)
+	elif request.method == 'GET' and setting:
+		return jsonify(drone.configuration[setting])
+	elif setting:
+		return jsonify(drone.set_configuration(request.form, setting))
+	else:
+		return jsonify(drone.set_configuration(request.form))

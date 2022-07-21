@@ -1,25 +1,67 @@
-from time import sleep, time
+import json, pkgutil, logging, time
 from threading import Thread
 import numpy as np
-from gpiozero.pins.pigpio import PiGPIOFactory
-from gpiozero.pins.mock import MockFactory
+from .utils.gpio import PiGPIOFactory, MockFactory
 from .measurement import SimMPU6050, MPU6050, DistanceSensor
-from .motor_control import SimMotor, BLHeli32
+from .motors import SimMotor, BLHeli32
 
 class Drone():
 
-    def __init__(self):
+    _CONFIG_TYPES = {
+        "status":int,
+        "geometry":dict,
+        "a":int,
+        "b":int,
+        "layout":str,
+        "control":dict,
+        "thrust":float,
+        "p_gain":float,
+        "i_gain":float,
+        "d_gain":float,
+        "float":float,
+        "mass":float
+    }
+
+    def __init__(self, config_file='default.json'):
 
         """Class for Drone Control using Python     
         """
-        self._status = 0
-
-        pass
+        self._create_log_file()
+        self.load_configuration_file(config_file)
     
-    def start(self, mass=0.5, h=167, b=167, max_motor_thrust=6.66, layout='x', p_gain=4.0, i_gain=4.0, 
-        d_gain=4.0, hz=40, us_echo_pin=23, us_trig_pin=24, motor_pins=[5, 6, 13, 19], simulation_mode=False):
+    def _create_log_file(self):
+        fname = f"{time.strftime('%d%m%Y%H%M%S', time.gmtime())}.log"
+        logging.basicConfig(filename=f"raspifly/static/logs/{fname}", filemode='w', level=logging.INFO)
+        logging.info("[*] Initializing Raspifly Class...")
+
+    def load_configuration_file(self, config_file):
+        logging.info("[*] Loading the default configuration file...")
+        # Load File
+        self.configuration = {}
+        config = json.loads(pkgutil.get_data(__name__, f"../static/configurations/{config_file}"))
+        # Set Configuration
+        self.set_configuration(config)
+    
+    def set_configuration(self, config, prev_key=None):
+        logging.info("[*] Checking the Configuration file...")
+        for key, value in config.items():
+            if type(value) == 'dict':
+                self.set_configuration(config, prev_key=key)
+            elif key.find('.') > -1:
+                prev_key, key = key.split('.')
+                self.configuration[prev_key][key] = self._CONFIG_TYPES[key](value)
+            elif prev_key:
+                self.configuration[prev_key][key] = self._CONFIG_TYPES[key](value)
+            else:
+                self.configuration[key] = self._CONFIG_TYPES[key](value)
+        return 'success'
+    
+    def start2(self, mass=0.5, h=167, b=167, max_motor_thrust=6.66, layout='x', p_gain=4.0, i_gain=4.0, 
+        d_gain=4.0, hz=40, us_pins=[23,24], motor_pins=[5, 6, 13, 19], simulation_mode=False):
         
         print("Starting Raspifly...")
+
+        # Set Geometry
 
         self._max_motor_thrust = max_motor_thrust # Maximum Single Motor Thrust (N)
         self._hover_thrust = ( mass * 9.8 / 4 ) / max_motor_thrust * 100
@@ -38,11 +80,11 @@ class Drone():
 
         if simulation_mode:
             self.accelerometer = SimMPU6050()
-            self.ultrasonic_sensor = DistanceSensor(us_echo_pin, us_trig_pin, max_distance=5.0, pin_factory=MockFactory())
+            self.ultrasonic_sensor = DistanceSensor(us_pins[0], us_pins[1], max_distance=5.0, pin_factory=MockFactory())
             self.motors = [SimMotor(pin, max_thrust=6.66) for pin in motor_pins]
         else:
             self.accelerometer = MPU6050()
-            self.ultrasonic_sensor = DistanceSensor(us_echo_pin, us_trig_pin, max_distance=5.0, pin_factory=PiGPIOFactory())
+            self.ultrasonic_sensor = DistanceSensor(us_pins[0], us_pins[1], max_distance=5.0, pin_factory=PiGPIOFactory())
             self.motors = [BLHeli32(pin, max_thrust=6.66, factory=PiGPIOFactory()) for pin in motor_pins]
         
         self.active = True
@@ -70,7 +112,7 @@ class Drone():
 
             self._pid_controller()
 
-            sleep(self._read_rate)
+            time.sleep(self._read_rate)
 
     def _pid_controller(self):
 
@@ -157,12 +199,13 @@ class Drone():
 
         print("Motor calibration complete")
 
-    def status(self):
-        """
-        Status Codes:
+    def settings(self, to_set=None):
 
-        0: Idle
-        
+        if not to_set:
+            return self._settings
 
-        """
-        return self._status
+        else:
+            return {"settings":"post"}
+
+    def get(self):
+        pass

@@ -1,0 +1,15 @@
+{
+  "status": 0,
+  "geometry":{
+    "height": 167,
+    "width": 167,
+    "layout": "x"
+  },
+  "control":{
+    "p_gain": 4.0,
+    "i_gain": 4.0,
+    "d_gain": 4.0
+  },
+  "thrust": 6.66,
+  "mass": 0.5
+}
